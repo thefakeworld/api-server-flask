@@ -3,7 +3,7 @@
 Copyright (c) 2019 - present AppSeed.us
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import json
 import pymysql
@@ -25,7 +25,7 @@ class Users(db.Model):
     email = db.Column(db.String(64), nullable=True)
     password = db.Column(db.Text())
     jwt_auth_active = db.Column(db.Boolean())
-    date_joined = db.Column(db.DateTime(), default=datetime.utcnow)
+    date_joined = db.Column(db.DateTime(), default=datetime.now)
 
     def __repr__(self):
         return f"User {self.username}"
@@ -85,11 +85,33 @@ class JWTTokenBlocklist(db.Model):
 
     def __repr__(self):
         return f"Expired Token: {self.jwt_token}"
-
+    
     def save(self):
         db.session.add(self)
         db.session.commit()
 
+
+class SecretBlocklist(db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+    secret_key = db.Column(db.String(36), nullable=False)
+    created_at = db.Column(db.DateTime(), nullable=False, default=datetime.now)
+    expire_at = db.Column(db.DateTime(), nullable=False, default=datetime.now() + timedelta(weeks=1))
+
+    def __repr__(self):
+        return f"Expired Secret: {self.secret_key}"
+    
+    def toDICT(self):
+        cls_dict = {}
+        cls_dict['id'] = self.id
+        cls_dict['secret_key'] = self.secret_key
+        cls_dict['created_at'] = self.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        cls_dict['expire_at'] = self.expire_at.strftime('%Y-%m-%d %H:%M:%S')
+        return cls_dict
+
+    def save(self):
+        print('保持', self)
+        db.session.add(self)
+        db.session.commit()
 
 class CarBrand(db.Model):
     

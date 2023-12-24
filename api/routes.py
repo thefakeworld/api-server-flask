@@ -12,7 +12,7 @@ from flask_restx import Api, Resource, fields
 
 import jwt
 
-from api.utills import create_success_response
+from api.utills import token_required, create_success_response
 
 from .models import CarSeries, db, Users, JWTTokenBlocklist, CarInfo, CarInfoDetail, object_as_dict
 from .config import BaseConfig
@@ -46,47 +46,6 @@ car_info_detail = rest_api.model('CarInfoDetailModel', {"car_id": fields.String(
 
 
 """
-   Helper function for JWT token required
-"""
-
-def token_required(f):
-
-    @wraps(f)
-    def decorator(*args, **kwargs):
-
-        token = None
-
-        if "authorization" in request.headers:
-            token = request.headers["authorization"]
-
-        if not token:
-            return {"success": False, "msg": "无权限访问"}, 200
-
-        try:
-            data = jwt.decode(token, BaseConfig.SECRET_KEY, algorithms=["HS256"])
-            current_user = Users.get_by_email(data["email"])
-
-            if not current_user:
-                return {"success": False,
-                        "msg": "Sorry. Wrong auth token. This user does not exist."}, 400
-
-            token_expired = db.session.query(JWTTokenBlocklist.id).filter_by(jwt_token=token).scalar()
-
-            if token_expired is not None:
-                return {"success": False, "msg": "Token revoked."}, 400
-
-            if not current_user.check_jwt_auth_active():
-                return {"success": False, "msg": "Token expired."}, 400
-
-        except:
-            return {"success": False, "msg": "Token is invalid"}, 400
-
-        return f(current_user, *args, **kwargs)
-
-    return decorator
-
-
-"""
     Flask-Restx routes
 """
 
@@ -98,7 +57,8 @@ class Register(Resource):
     """
 
     @rest_api.expect(signup_model, validate=True)
-    def post(self):
+    @token_required # 限制一下 不开放注册功能
+    def post(self, current_user):
 
         req_data = request.get_json()
 
@@ -272,16 +232,6 @@ class GitHubLogin(Resource):
                     "username": user_json['username'],
                     "token": token,
                 }}, 200
-    
-@rest_api.route('/api/cars/data')
-class CarsData(Resource):
-    def get(self):
-        print("搜索", request.args)
-        car_id = request.args.get('car_id', type=str)
-        query = CarInfo.query.filter(CarInfo.car_id == car_id)
-        carData = query.first()
-        print('data', carData)
-        return create_success_response(carData.toJSON())
 
 @rest_api.route('/api/cars/list')
 class CarsSearch(Resource):
@@ -317,7 +267,7 @@ class CarsSearch(Resource):
 @rest_api.route('/api/cars_series')
 class CarsSearch(Resource):
     @token_required
-    def get(self, user):
+    def get(self):
         print("搜索", request.args)
         series_id = request.args.get('series_id', type=str)
         brand_name = request.args.get('brand_name', type=str)
@@ -339,87 +289,11 @@ class CarsSearch(Resource):
             print('搜索',dealer_price)
             query = query.filter(CarSeries.dealer_price < dealer_price)
 
-        total_items = query.count()
-        print(total_items)
-        query = query.offset((page - 1) * per_page).limit(per_page)
-        cars = query.all()
+        series = query.paginate(page=page, per_page=per_page, error_out=False)
 
         return create_success_response({
-            'total': total_items,
-            'list': [car.toDICT() for car in cars]
+            'page': series.page,
+            'pageSize': series.per_page,
+            'total': series.total,
+            'list': [car.toDICT() for car in series.items]
         })
-
-
-@rest_api.route('/api/cars/info/detail')
-class CarsInfoDetailSearch(Resource):
-    # @token_required
-    # @rest_api.expect(car_info_detail)
-    def get(self):
-        print("搜索", request.args)
-        car_id = request.args.get('car_id', type=str)
-
-        sql = text("SELECT * FROM car_info_detail WHERE car_id = :car_id")
-        result = db.session.execute(sql, params={"car_id": car_id})
-        # print(result)
-        rows = result.fetchall()
-
-        data = {}
-        for row in rows:
-            # print(row)
-            key = row.key
-            value = row.value
-            data[key] = value
-         
-        return create_success_response(data)
-    
-
-@rest_api.route('/api/cars/img')
-class CarsInfoDetailSearch(Resource):
-    # @token_required
-    def get(self):
-        print("搜索", request.args)
-        name = request.args.get('name', type=str)
-        car_id = request.args.get('car_id', type=str)
-
-        sql = text("SELECT * FROM car_image_wg WHERE car_id = :car_id limit 10")
-        if(name == 'gft'):
-            sql = text("SELECT * FROM car_image_wg WHERE car_id = :car_id limit 10")
-        if(name == 'ns'):
-            sql = text("SELECT * FROM car_image_ns WHERE car_id = :car_id limit 10")
-        if(name == 'kj'):
-            sql = text("SELECT * FROM car_image_kj WHERE car_id = :car_id limit 10")
-
-        print(sql)
-        result = db.session.execute(sql, params={"car_id": car_id})
-        rows = result.fetchall()
-        list=[{"name": row.name, "car_id": row.car_id, "pic_url": row.pic_url} for row in rows]
-         
-        return create_success_response(list)
-    
-
-@rest_api.route('/api/cars/img/dongche')
-class CarsImageDongCheSearch(Resource):
-    # @token_required
-    def get(self):
-        series_id = request.args.get('series_id', type=str)
-        car_id = request.args.get('car_id', type=str)
-        url = f"https://www.dongchedi.com/motor/pc/car/series/get_series_picture?aid=1839&app_name=auto_web_pc&series_id={series_id}&category=&offset=0&count=1&car_id={car_id}"
-        headers = {
-            'User-Agent': 'Apifox/1.0.0 (https://apifox.com)',
-            'Accept': '*/*',
-            'Host': 'www.dongchedi.com',
-            'Connection': 'keep-alive'
-        }
-
-        print('get dongche')
-        response = requests.request("GET", url, headers=headers)
-
-        try:
-            dongcheJson = response.json()
-            carList = dongcheJson['data']['picture_list']
-            picurls = carList[0]['pic_url'] or []
-            piclist = picurls[0: 10]
-            return create_success_response(piclist)
-        except:
-            return create_success_response([], msg='没有图片')
-
