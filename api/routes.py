@@ -232,21 +232,38 @@ class GitHubLogin(Resource):
                     "username": user_json['username'],
                     "token": token,
                 }}, 200
+    
+@rest_api.route('/api/cars/data')
+class CarsData(Resource):
+    def get(self):
+        print("搜索", request.args)
+        car_id = request.args.get('car_id', type=str)
+        query = CarInfo.query.filter(CarInfo.car_id == car_id)
+        carData = query.first()
+        print('data', carData)
+        if(carData):
+            return create_success_response(carData.toJSON())
+        return create_success_response({})
 
 @rest_api.route('/api/cars/list')
 class CarsSearch(Resource):
     def get(self):
         print("搜索", request.args)
+        brand_id = request.args.get('brand_id', type=str)
         brand_name = request.args.get('brand_name', type=str)
+        series_id = request.args.get('series_id', type=str)
         series_name = request.args.get('series_name', type=str)
         dealer_price = request.args.get('dealer_price', type=str)
         page = request.args.get('page', type=int, default=1)
-        per_page = request.args.get('per_page', type=int, default=10)
+        per_page = request.args.get('pageSize', type=int, default=10)
 
         query = CarInfo.query
+        if brand_id:
+            query = query.filter(CarInfo.brand_id == brand_id)
         if brand_name:
-            print('搜索',brand_name)
             query = query.filter(CarInfo.brand_name.like(brand_name))
+        if series_id:
+            query = query.filter(CarInfo.series_id.like(series_id))
         if series_name:
             print('搜索',series_name)
             query = query.filter(CarInfo.series_name.like(series_name))
@@ -266,10 +283,10 @@ class CarsSearch(Resource):
 
 @rest_api.route('/api/cars_series')
 class CarsSearch(Resource):
-    @token_required
     def get(self):
         print("搜索", request.args)
         series_id = request.args.get('series_id', type=str)
+        brand_id = request.args.get('brand_id', type=str)
         brand_name = request.args.get('brand_name', type=str)
         outter_name = request.args.get('outter_name', type=str)
         dealer_price = request.args.get('dealer_price', type=str)
@@ -279,6 +296,8 @@ class CarsSearch(Resource):
         query = CarSeries.query
         if series_id:
             query = query.filter(CarSeries.id == series_id)
+        if brand_id:
+            query = query.filter(CarSeries.brand_id == brand_id)
         if brand_name:
             print('搜索',brand_name)
             query = query.filter(CarSeries.brand_name.like(brand_name))

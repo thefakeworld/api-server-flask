@@ -118,6 +118,7 @@ class CarBrand(db.Model):
     brand_name = db.Column(db.String(50))
     brand_id = db.Column(db.String(50), primary_key=True)
     pinyin = db.Column(db.String(50))
+    image_url = db.Column(db.String(120))
     def toDICT(self):
         return object_as_dict(self)
 

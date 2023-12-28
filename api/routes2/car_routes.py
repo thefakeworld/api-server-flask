@@ -2,21 +2,26 @@ from flask import request
 from . import rest_api
 from flask_restx import Resource
 from ..utills import token_required, secret_required, create_success_response
-from ..models import CarInfo, db
+from ..models import CarInfo, db, CarBrand
 import requests
 from sqlalchemy import text, inspect
 
 
-    
-@rest_api.route('/api/cars/data')
-class CarsData(Resource):
+@rest_api.route('/cars/brands')
+class CarsBrands(Resource):
     def get(self):
-        print("搜索", request.args)
-        car_id = request.args.get('car_id', type=str)
-        query = CarInfo.query.filter(CarInfo.car_id == car_id)
-        carData = query.first()
-        print('data', carData)
-        return create_success_response(carData.toJSON())
+        brandList = CarBrand.query.all()
+        return create_success_response([car.toDICT() for car in brandList])
+
+# @rest_api.route('/cars/data')
+# class CarsData(Resource):
+#     def get(self):
+#         print("搜索", request.args)
+#         car_id = request.args.get('car_id', type=str)
+#         query = CarInfo.query.filter(CarInfo.car_id == car_id)
+#         carData = query.first()
+#         print('data', carData)
+#         return create_success_response(carData.toJSON())
 
 @rest_api.route('/cars/info/detail')
 class CarsInfoDetailSearch(Resource):
