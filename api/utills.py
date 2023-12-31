@@ -24,8 +24,11 @@ def token_required(f):
         if not token:
             return {"success": False, "msg": "无权限访问"}, 401
 
+        # data = jwt.decode(token, BaseConfig.SECRET_KEY, algorithms=["HS256"])
+        # print('authorization', data)
         try:
             data = jwt.decode(token, BaseConfig.SECRET_KEY, algorithms=["HS256"])
+            print('authorization', data)
             current_user = Users.get_by_email(data["email"])
 
             if not current_user:
@@ -96,11 +99,20 @@ def secret_required(f):
             return {'msg': 'Secret key missing'}, 403
 
         secret = SecretBlocklist.query.filter_by(secret_key=token).first()
-        if secret and secret.expire_at > datetime.utcnow():
-            print('打印', secret)
-            return f(secret)
-        else:
+
+        if not secret:
             return {'msg': 'Invalid or expired secret key'}, 403
+
+        if secret.expiration_type == '0':
+            if secret.is_used:
+                return {'msg': 'secret key 失效'}, 403
+            elif secret.is_expired():
+                secret.is_used = True
+         
+        if secret.is_expired():
+            return {'msg': 'Invalid or expired secret key'}, 403
+        else:
+            return f(secret)
 
     return decorator
 

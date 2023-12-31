@@ -25,7 +25,6 @@ class CarsBrands(Resource):
 
 @rest_api.route('/cars/info/detail')
 class CarsInfoDetailSearch(Resource):
-    @secret_required
     def get(self):
         print("搜索", request.args)
         car_id = request.args.get('car_id', type=str)

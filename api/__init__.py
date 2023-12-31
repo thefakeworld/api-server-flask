@@ -26,6 +26,7 @@ CORS(app)
 @app.before_first_request
 def initialize_database():
     try:
+        print('初始化数据库')
         db.create_all()
     except Exception as e:
 

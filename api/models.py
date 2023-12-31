@@ -94,8 +94,11 @@ class JWTTokenBlocklist(db.Model):
 class SecretBlocklist(db.Model):
     id = db.Column(db.Integer(), primary_key=True)
     secret_key = db.Column(db.String(36), nullable=False)
+    expiration_type = db.Column(db.String(36), nullable=False)
     created_at = db.Column(db.DateTime(), nullable=False, default=datetime.now)
-    expire_at = db.Column(db.DateTime(), nullable=False, default=datetime.now() + timedelta(weeks=1))
+    active_date = db.Column(db.DateTime)
+    expire_at = db.Column(db.DateTime())
+    is_used = db.Column(db.Boolean, default=False, nullable=False)
 
     def __repr__(self):
         return f"Expired Secret: {self.secret_key}"
@@ -104,9 +107,39 @@ class SecretBlocklist(db.Model):
         cls_dict = {}
         cls_dict['id'] = self.id
         cls_dict['secret_key'] = self.secret_key
+        cls_dict['expiration_type'] = self.expiration_type
         cls_dict['created_at'] = self.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        cls_dict['active_date'] = self.active_date.strftime('%Y-%m-%d %H:%M:%S')
         cls_dict['expire_at'] = self.expire_at.strftime('%Y-%m-%d %H:%M:%S')
+        cls_dict['is_used'] = self.is_used
         return cls_dict
+    
+    def generate_expiration(self):
+        if not self.active_date:
+            self.active_date = datetime.now()
+        self.expire_at = self.active_date + self.get_expiration_policy()
+    
+    def is_expired(self):
+        return datetime.now() > self.expire_at if self.expire_at else False
+    
+    def get_expiration_policy(self):
+        # 立即过期 使用一次就过期
+        if(self.expiration_type == '0'):
+            return timedelta(seconds=10)
+        if(self.expiration_type == '1'):
+            return timedelta(days=1)
+        if(self.expiration_type == '7'):
+            return timedelta(days=7)
+        if(self.expiration_type == '31'):
+            return timedelta(days=31)
+        return timedelta(seconds=1)
+    
+    def use_key(self):
+        if not self.is_used and not self.is_expired():
+            self.is_used = True
+            db.session.commit()
+            return True
+        return False
 
     def save(self):
         print('保持', self)
