@@ -94,3 +94,36 @@ class CarsImageDongCheSearch(Resource):
         except:
             return create_success_response([], msg='没有图片')
 
+
+
+@rest_api.route('/motor/pc')
+class DongCheRequest(Resource):
+    def post(self):
+        req_data = request.get_json()
+        print('req_data', req_data)
+
+        url = req_data.get('url')
+        params = req_data.get('params')
+        
+        # url = f"https://www.dongchedi.com/motor/pc/car/series/get_series_picture?aid=1839&app_name=auto_web_pc&series_id={series_id}&category=&offset=0&count=1&car_id={car_id}"
+        headers = {
+            'User-Agent': 'Apifox/1.0.0 (https://apifox.com)',
+            'Accept': '*/*',
+            'Host': 'www.dongchedi.com',
+            'Connection': 'keep-alive'
+        }
+     
+        response = requests.request("GET", url, params=params, headers=headers)
+        
+        return response.json()
+    
+        # 响应大会请求失败？好像本地服务端口占用影响
+
+        # print('请求转发成功', response)
+
+        try:
+            dongcheJson = response.json()
+            print('请求转发成功')
+            return create_success_response(dongcheJson)
+        except:
+            return create_success_response([], msg='没有图片')

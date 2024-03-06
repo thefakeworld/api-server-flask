@@ -1,3 +1,20 @@
+## Linux 开发 ## 启动 进入虚拟环境
+```bash
+source env/bin/activate
+flask run --port=5001 
+```
+### windows:
+env\Scripts\activate
+
+## 通过docker启动容器
+docker run -it -p3100:5005 --name=dongche-server api-server-flask-flask_api
+
+## 后台运行程序
+nohup python3 -m flask run > nohup.out 2>&1 &
+
+## 本地ip
+<br />
+
 ## [Flask API Server](https://github.com/app-generator/api-server-flask)
 
 Simple **Flask API Boilerplate** enhanced with `JWT` authentication, `OAuth` via **GitHub**, `SqlAlchemy`, **SQLite** persistence, and deployment scripts via Docker. It has all the `ready-to-use` bare minimum essentials.
@@ -150,23 +167,6 @@ api-server-flask/
 └── tests.py
 ```
 
-## 启动 进入虚拟环境
-
-$ source env/bin/activate
-
-flask run --port=5001 
-
-### windows:
-env\Scripts\activate
-
-## 通过docker启动容器
-docker run -it -p3100:5005 --name=dongche-server api-server-flask-flask_api
-
-## 后台运行程序
-nohup python3 -m flask run > nohup.out 2>&1 &
-
-## 本地ip
-<br />
 
 ## ✨ API
 
