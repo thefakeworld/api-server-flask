@@ -1,7 +1,7 @@
 ## Linux 开发 ## 启动 进入虚拟环境
 ```bash
 source env/bin/activate
-flask run --port=5001 
+flask run --port=5001  
 ```
 ### windows:
 env\Scripts\activate

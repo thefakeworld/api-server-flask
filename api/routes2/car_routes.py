@@ -127,3 +127,17 @@ class DongCheRequest(Resource):
             return create_success_response(dongcheJson)
         except:
             return create_success_response([], msg='没有图片')
+
+@rest_api.route('/wise/rate')
+class DongCheRequest(Resource):
+    def get(self):
+        url = "https://wise.com/rates/live?source=USD&target=CNY"
+        response = requests.request("GET", url)
+        print('结果', response)
+
+        try:
+            dongcheJson = response.json()
+            print('请求转发成功')
+            return create_success_response(dongcheJson)
+        except:
+            return create_success_response([], msg='没有图片')
